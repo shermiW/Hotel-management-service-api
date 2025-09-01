@@ -3,7 +3,6 @@ package com.cpd.hotel_system.hotel_management_service_api.service.impl;
 import com.cpd.hotel_system.hotel_management_service_api.dto.request.RequestHotelDto;
 import com.cpd.hotel_system.hotel_management_service_api.dto.response.ResponseBranchDto;
 import com.cpd.hotel_system.hotel_management_service_api.dto.response.ResponseHotelDto;
-import com.cpd.hotel_system.hotel_management_service_api.dto.response.ResponseRoomDto;
 import com.cpd.hotel_system.hotel_management_service_api.dto.response.paginate.HotelPaginateResponseDto;
 import com.cpd.hotel_system.hotel_management_service_api.entity.Branch;
 import com.cpd.hotel_system.hotel_management_service_api.entity.Hotel;
@@ -12,6 +11,7 @@ import com.cpd.hotel_system.hotel_management_service_api.repo.HotelRepo;
 import com.cpd.hotel_system.hotel_management_service_api.service.HotelService;
 import com.cpd.hotel_system.hotel_management_service_api.util.ByteCodeHandler;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
 import java.sql.SQLException;
@@ -53,13 +53,25 @@ public class HotelServiceImpl implements HotelService {
     }
 
     @Override
-    public RequestHotelDto findById(String hotelId) {
-        return null;
+    public ResponseHotelDto findById(String hotelId) throws SQLException {
+        Hotel selectedHotel = hotelRepo.findById(hotelId).orElseThrow(()->new EntryNotFoundException("Hotel not found"));
+        return toResponseHotelDto(selectedHotel);
     }
 
     @Override
     public HotelPaginateResponseDto findAll(int page, int size, String searchText) {
-        return null;
+         return HotelPaginateResponseDto.builder()
+                .dataCount(hotelRepo.countAllHotels(searchText))
+                .dataList(
+                        hotelRepo.searchAllHotels(searchText,PageRequest.of(page,size))
+                                .stream().map(e-> {
+                                            try {
+                                                return toResponseHotelDto(e);
+                                            } catch (SQLException ex) {
+                                                throw new RuntimeException(ex);
+                                            }
+                                }).collect(Collectors.toList())
+                ).build();
     }
 
     //map-structs, model-mapper
